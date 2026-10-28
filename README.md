@@ -1,94 +1,46 @@
-# RetailNova | Informe ejecutivo del caso de churn y riesgo comercial
+# RetailNova: predicción de abandono y fidelización
 
-## Resumen ejecutivo
-RetailNova es un proyecto de análisis de datos y modelado predictivo orientado a anticipar el riesgo de abandono de clientes en un contexto de telecomunicaciones y servicios digitales. El objetivo principal es transformar una base sintética, alineada con un caso de negocio realista, en una evidencia analítica útil para la toma de decisiones de retención, soporte operativo y segmentación comercial.
+Prototipo académico de comercio minorista para la EP5 de Gestión de Proyectos de Datos. Todos los registros son sintéticos. No se reportan resultados de clientes reales.
 
-El caso se estructura como una iniciativa de ciencia de datos con enfoque ejecutivo: validar la calidad del dato, diseñar un dataset sintético representativo, explorar sesgos estructurales, preparar un flujo de modelado robusto y entregar una narrativa analítica clara para stakeholders no técnicos.
+## Ejecución
 
-## Contexto del negocio
-La empresa ficticia RetailNova opera un modelo de servicios con clientes distribuidos por región, zona, segmento y tipo de plan. El desafío no es solo estimar quien podría abandonar, sino identificar dónde, para quién y bajo qué condiciones el riesgo es mayor. Esto permite actuar antes de que el problema se materialice, reduciendo la pérdida de ingresos y mejorando la experiencia del cliente.
+Python 3.11 o superior. Desde la carpeta raíz:
 
-En la práctica, el análisis combina:
-- diagnóstico de churn y riesgo de retención,
-- revisión de calidad operativa y de servicio,
-- segmentación por perfil del cliente,
-- modelado predictivo con validación prudente,
-- interpretación de resultados en lenguaje de negocio.
-
-## Objetivos
-1. Generar un dataset sintético que refleje el caso de negocio de RetailNova con sesgos y condiciones realistas.
-2. Revisar el comportamiento del churn por segmentación, región, plan, calidad de servicio y riesgo crediticio.
-3. Construir una base analítica reproducible para EDA, preparación de datos y modelado.
-4. Diseñar una estructura de trabajo tipo proyecto de churn con narrativa ejecutiva y validación técnica.
-5. Crear un repositorio listo para uso local y para replicación en un entorno de ciencia de datos.
-
-## Alcance analítico
-El proyecto contempla cuatro fases principales:
-
-### 1. Generación del dataset
-Se crea un dataset sintético con variables demográficas, comerciales, operativas y de riesgo. El objetivo es reflejar patrones plausibles de negocio, evitando ruido aleatorio y priorizando relaciones causales realistas.
-
-### 2. Exploración y análisis descriptivo
-Se revisan indicadores clave como:
-- prevalencia de churn,
-- comportamiento por región y segmento,
-- distribución de métricas de experiencia y servicio,
-- correlación entre variables operativas y abandono,
-- identificación de señales de riesgo discriminantes.
-
-### 3. Preparación para modelado
-Se ejecuta una separación train/test sin fuga de información, se identifican variables numéricas y categóricas, y se aplican transformaciones de forma consistente para preparar la base de entrenamiento y evaluación.
-
-### 4. Evaluación y narrativa de negocio
-Se comparan modelos base y supervisados para entender qué nivel de capacidad predictiva tiene el proyecto y cuál es la decisión más valiosa para la organización desde un punto de vista operacional y comercial.
-
-## Estructura del repositorio
-- `data/generated/`: datasets sintéticos generados.
-- `docs/`: documentación del caso, requisitos y matriz de riesgos.
-- `notebooks/`: cuadernos de generación del dataset y análisis exploratorio.
-- `environment.yml`: entorno de conda para reproducibilidad.
-- `requirements.txt`: dependencias de Python para instalación rápida.
-
-## Indicadores clave del caso
-Los resultados esperados del proyecto apuntan a identificar los clientes con mayor probabilidad de abandono según variables como:
-- región y zona de operación,
-- segmento del cliente,
-- plan contratado,
-- antigüedad del cliente,
-- incidencias técnicas y calidad de experiencia,
-- nivel de riesgo crediticio,
-- NPS y percepción de servicio.
-
-## Requisitos del entorno
-El proyecto se ejecuta con Python 3.12 y usa bibliotecas estándares de análisis de datos y machine learning, especialmente:
-- pandas
-- numpy
-- matplotlib
-- seaborn
-- scikit-learn
-- jupyterlab / notebook
-- ipykernel
-- openpyxl
-
-## Instalación del entorno con conda
 ```bash
-conda env create -f environment.yml
-conda activate retailnova
+python -m pip install -r requirements.txt
+python scripts/validate_notebook_execution.py
+python scripts/verify_project.py
 ```
 
-## Instalación alternativa con pip
-```bash
-python -m venv .venv
-source .venv/bin/activate   # Linux/macOS
-.venv\Scripts\activate       # Windows
-pip install -r requirements.txt
-```
+El primer comando instala las dependencias. El segundo ejecuta en orden ambos notebooks y guarda sus salidas (incluidos gráficos). El tercero comprueba los contratos del dataset, temporalidad, particiones y evidencias. También se pueden abrir los notebooks en Jupyter y ejecutar todas sus celdas. La primera ejecución reemplaza los datos y resultados generados de forma reproducible con semilla 42.
 
-## Cómo usar el proyecto
-1. Revisar la carpeta `docs/` para comprender el caso de negocio y los requisitos.
-2. Ejecutar el notebook de generación del dataset en `notebooks/01_generador_dataset_retailnova_case1.ipynb`.
-3. Abrir el notebook de EDA y storytelling en `notebooks/02_eda_retailnova_storytelling.ipynb`.
-4. Validar resultados, interpretar sesgos y comunicar hallazgos de negocio.
+## Datos y definición temporal
 
-## Conclusión
-RetailNova combina analítica de datos, modelado predictivo y narrativa ejecutiva con un enfoque claro: detectar riesgo de churn antes de que se materialice. El valor del proyecto no está solo en la precisión del modelo, sino en la capacidad de convertir evidencia analítica en decisiones comerciales concretas, con prioridad en retención, servicio y sostenibilidad del negocio.
+Se simulan 185.000 clientes previamente recurrentes (mínimo dos compras en los 12 meses anteriores al 1 de abril de 2026). Esta cohorte es un supuesto académico: el caso informa 185.000 registrados, sin afirmar que todos sean recurrentes. Las variables predictoras resumen el comportamiento de los 12 meses previos al corte. El caso dispone de 36 meses históricos, pero este prototipo no reconstruye cada transacción de ese período.
+
+El objetivo es cero compras entre el 1 de abril de 2026 inclusive y el 1 de octubre de 2026 exclusive. Se calcula desde `compras_periodo_objetivo` y se puede contrastar con la fecha de última compra al cierre. Esas dos columnas de auditoría son posteriores al corte y quedan excluidas del modelo. La recencia predictora corresponde exclusivamente a compras anteriores al corte.
+
+La probabilidad de abandono se calibra a un 24% esperado y las etiquetas se sortean, sin forzar el porcentaje observado ni construir predictores a partir de ellas. El 8% exacto tiene edad faltante; parte de ese grupo también tiene comuna faltante. Se conserva la región para auditar representación: Metropolitana 65%, Valparaíso 20% y Biobío 15% como proporciones esperadas de simulación.
+
+## Entrenamiento y evaluación
+
+Se comparan baseline, regresión logística y Random Forest con particiones estratificadas 60/20/20. La imputación, escalado y codificación se ajustan únicamente con entrenamiento. El modelo se selecciona por average precision en validación y el umbral por F1 en validación. Solo después se evalúa test. Esta división es por clientes de una misma cohorte; no reemplaza una futura validación temporal con varias cohortes.
+
+La lista `FEATURES` en `scripts/analyze.py` limita explícitamente las entradas al modelo. Se excluyen ID, etiqueta, información futura, región y comuna. Edad se conserva como variable de demostración; su pertinencia y posibles diferencias por edad requieren revisión antes de uso real. La auditoría regional es descriptiva; no acredita ausencia de sesgos. Los niveles de riesgo usan cortes ilustrativos de 0,20 y 0,50, distintos del umbral binario optimizado; deben ajustarse a capacidad y costos de campañas.
+
+## Archivos
+
+- `scripts/generate_data.py`: generador con supuestos y metadatos.
+- `scripts/analyze.py`: preparación, modelos, métricas y exportaciones.
+- `notebooks/`: ejecución documentada con resultados guardados; la lógica reutilizable reside en scripts.
+- `data/generated/`: CSV sintético y metadatos.
+- `outputs/`: comparación de validación, métricas de test, auditoría regional, particiones, clientes puntuados de test, gráficos y modelo serializado.
+- `docs/`: documentos originales de planificación y registro de correcciones.
+
+Para una demostración se pueden importar `outputs/clientes_riesgo_test.csv` y `outputs/auditoria_regional.csv` en Power BI. Este paquete no incluye un dashboard Power BI terminado. El archivo joblib es para el entorno de confianza del proyecto; solo cargar modelos de origen conocido.
+
+## Alcance y pendientes EP5
+
+Los documentos originales de factibilidad y planificación se conservan como línea base, sin modificarlos retroactivamente. Revisar `docs/CORRECCIONES_EP5.md`. El tablero Jira y su historial no fueron consultados ni modificados: faltan las evidencias reales de responsables, fechas, avance y comparación contra EP3. No se afirma un porcentaje de avance global ni cumplimiento del presupuesto. El informe final de 5–8 páginas y la presentación tampoco están incluidos.
+
+Las métricas miden recuperación de patrones diseñados por el generador. No prueban capacidad predictiva real, causalidad, ahorro, fidelización efectiva ni resultados de un piloto. Antes de uso comercial se necesitan datos reales autorizados, cohortes temporales independientes, validación comercial, revisión de variables y monitoreo.

@@ -1,18 +1,8 @@
 name: retailnova
 channels:
   - conda-forge
-  - defaults
 dependencies:
-  - python=3.12
+  - python=3.11
   - pip
-  - numpy>=1.26
-  - pandas>=2.2
-  - matplotlib>=3.8
-  - seaborn>=0.13
-  - scikit-learn>=1.4
-  - jupyterlab>=4.2
-  - notebook>=7.2
-  - ipykernel>=6.29
-  - openpyxl>=3.1
   - pip:
-      - nbformat>=5.10
+    - -r requirements.txt

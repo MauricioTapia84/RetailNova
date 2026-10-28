@@ -1,0 +1,17 @@
+variable_transformada,coeficiente
+cat__canal_compra_Comercio electrónico,-0.2577112721626938
+cat__categoria_principal_Hogar,-0.25749523728085094
+cat__categoria_principal_Tecnología,-0.25647647082334085
+cat__canal_compra_Mixto,-0.25043407054704286
+cat__canal_compra_Tienda física,-0.24104360635364588
+cat__categoria_principal_Electrodomésticos,-0.23521724095919186
+num__cantidad_compras_12m,-0.23406794259144087
+num__interacciones_campanas_12m,-0.20258974603963084
+num__edad,-0.008648252653422655
+num__monto_promedio_compra,-0.00850858581313163
+num__antiguedad_meses,-0.00490176411224628
+num__missingindicator_edad,0.004576903439806435
+num__proporcion_compras_promocion,0.08756066534481918
+num__devoluciones_12m,0.10214553894221653
+num__reclamos_12m,0.24576550385177548
+num__recencia_dias,0.49087545890611867

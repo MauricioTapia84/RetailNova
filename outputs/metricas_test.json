@@ -1,0 +1,24 @@
+{
+  "modelo_seleccionado": "Logistica",
+  "umbral_elegido_en_validacion": 0.23999999999999994,
+  "train": 111000,
+  "validacion": 37000,
+  "test": 37000,
+  "accuracy": 0.6441081081081081,
+  "precision": 0.3544578640249695,
+  "recall": 0.5884208154989863,
+  "f1": 0.4424119241192412,
+  "roc_auc": 0.674765610702212,
+  "average_precision": 0.411987324052371,
+  "matriz_confusion_tn_fp_fn_tp": [
+    [
+      18608,
+      9514
+    ],
+    [
+      3654,
+      5224
+    ]
+  ],
+  "advertencia": "Evaluación sobre datos sintéticos, sin validación en clientes reales."
+}

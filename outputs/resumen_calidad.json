@@ -1,0 +1,29 @@
+{
+  "filas": 185000,
+  "columnas": 21,
+  "ids_unicos": true,
+  "duplicados": 0,
+  "nulos_por_columna": {
+    "id_cliente": 0,
+    "edad": 14800,
+    "comuna": 7400,
+    "region": 0,
+    "fecha_registro": 0,
+    "canal_compra": 0,
+    "antiguedad_meses": 0,
+    "cantidad_compras_12m": 0,
+    "frecuencia_compra_mensual": 0,
+    "monto_promedio_compra": 0,
+    "monto_total_12m": 0,
+    "categoria_principal": 0,
+    "proporcion_compras_promocion": 0,
+    "devoluciones_12m": 0,
+    "reclamos_12m": 0,
+    "interacciones_campanas_12m": 0,
+    "fecha_ultima_compra_pre_corte": 0,
+    "recencia_dias": 0,
+    "compras_periodo_objetivo": 0,
+    "fecha_ultima_compra_al_cierre": 0,
+    "churn_6m": 0
+  }
+}
