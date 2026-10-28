@@ -1,0 +1,15 @@
+{
+  "tipo": "datos sintéticos; no son evidencia comercial real",
+  "seed": 42,
+  "clientes": 185000,
+  "cohorte": "clientes con al menos dos compras en los 12 meses previos al corte",
+  "corte_variables": "2026-04-01",
+  "fin_objetivo_exclusivo": "2026-10-01",
+  "historia_disponible_caso_meses": 36,
+  "ventana_features_meses": 12,
+  "churn_definicion": "cero compras entre 2026-04-01 inclusive y 2026-10-01 exclusive",
+  "churn_observado": 0.23995135135135134,
+  "demografia_incompleta": 0.08,
+  "supuestos": "185000 clientes recurrentes simulados para demostración; el caso no afirma que los 185000 registrados sean todos recurrentes. Probabilidad calibrada a 24% esperado, no etiqueta forzada. No se simulan 36 meses de transacciones individuales.",
+  "limitaciones": "Las asociaciones fueron diseñadas; las métricas solo evalúan la simulación. No demuestran causalidad ni eficacia de campañas."
+}
