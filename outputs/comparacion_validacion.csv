@@ -1,4 +1,0 @@
-modelo,validacion_roc_auc,validacion_average_precision
-Logistica,0.6692455765780545,0.40464895891405755
-RandomForest,0.6652044036107663,0.3957595076144287
-Baseline,0.5,0.23994594594594595

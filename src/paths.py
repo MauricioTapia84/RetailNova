@@ -1,0 +1,50 @@
+"""Canonical paths for RetailNova data, notebooks, and generated artifacts."""
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SRC_DIR = ROOT / "src"
+NOTEBOOKS_DIR = ROOT / "notebooks"
+DOCS_DIR = ROOT / "docs"
+
+DATA_DIR = ROOT / "data"
+RAW_DIR = DATA_DIR / "raw"
+RAW_TRAIN_DIR = RAW_DIR / "train"
+RAW_TEST_DIR = RAW_DIR / "test"
+PROCESSED_DIR = DATA_DIR / "processed"
+PROCESSED_TRAIN_DIR = PROCESSED_DIR / "train"
+PROCESSED_TEST_DIR = PROCESSED_DIR / "test"
+
+OUTPUTS_DIR = ROOT / "outputs"
+GRAPHS_DIR = OUTPUTS_DIR / "graphs"
+MODEL_DIR = OUTPUTS_DIR / "model"
+
+DATASET_PATH = RAW_DIR / "dataset.csv"
+HISTORICAL_MONTHLY_PATH = RAW_DIR / "historial_mensual_36m.csv.gz"
+METADATA_PATH = RAW_DIR / "metadata.json"
+TRAIN_RAW_PATH = RAW_TRAIN_DIR / "train.csv"
+TEST_RAW_PATH = RAW_TEST_DIR / "test.csv"
+
+TRAIN_SOURCE_PATH = PROCESSED_TRAIN_DIR / "train_source.csv"
+TRAIN_CLEAN_PATH = PROCESSED_TRAIN_DIR / "train_clean.csv"
+TRAIN_PROCESSED_PATH = PROCESSED_TRAIN_DIR / "train.csv"
+TEST_PROCESSED_PATH = PROCESSED_TEST_DIR / "test.csv"
+DASHBOARD_TRAIN_PATH = PROCESSED_TRAIN_DIR / "dashboard_train.csv"
+PARTITIONS_PATH = PROCESSED_DIR / "particiones.csv"
+MODEL_COMPARISON_PATH = PROCESSED_TRAIN_DIR / "comparacion_validacion.csv"
+SCORED_TEST_PATH = PROCESSED_TEST_DIR / "clientes_riesgo_test.csv"
+REGIONAL_AUDIT_PATH = PROCESSED_TEST_DIR / "auditoria_regional.csv"
+MODEL_COEFFICIENTS_PATH = PROCESSED_TRAIN_DIR / "coeficientes_modelo.csv"
+CLASS_BALANCE_RESULTS_PATH = PROCESSED_TRAIN_DIR / "comparacion_balanceo.csv"
+CLUSTERING_RESULTS_PATH = PROCESSED_TRAIN_DIR / "comparacion_clustering.csv"
+OPTUNA_RESULTS_PATH = PROCESSED_TRAIN_DIR / "resultados_optuna.csv"
+SUPERVISED_COMPARISON_PATH = PROCESSED_TRAIN_DIR / "comparacion_modelos_supervisados.csv"
+FINAL_MODEL_SCORED_TEST_PATH = PROCESSED_TEST_DIR / "predicciones_modelo_final_test.csv"
+GAIN_LIFT_TEST_PATH = PROCESSED_TEST_DIR / "ganancia_lift_test.csv"
+
+MODEL_PATH = MODEL_DIR / "modelo_retailnova.joblib"
+ADVANCED_MODEL_PATH = MODEL_DIR / "modelo_retailnova_avanzado.joblib"
+CLUSTER_MODEL_PATH = MODEL_DIR / "modelo_clustering_retailnova.joblib"
+TEST_METRICS_PATH = MODEL_DIR / "metricas_test.json"
+ADVANCED_TEST_METRICS_PATH = MODEL_DIR / "metricas_modelado_avanzado_test.json"
+DATA_QUALITY_PATH = MODEL_DIR / "resumen_calidad.json"

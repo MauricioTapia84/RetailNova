@@ -1,1 +1,0 @@
-PASS: cohorte, calidad, temporalidad, exclusión de fugas conocidas, particiones y notebooks ejecutados.

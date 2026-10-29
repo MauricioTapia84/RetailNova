@@ -1,0 +1,23 @@
+{
+  "tipo": "datos sintéticos; no son evidencia comercial real",
+  "seed": 42,
+  "clientes": 185000,
+  "cohorte": "clientes recurrentes simulados con al menos dos compras en los 12 meses previos al corte",
+  "historial_mensual": {
+    "archivo": "historial_mensual_36m.csv.gz",
+    "meses_historicos": 36,
+    "inicio_inclusivo": "2023-04-01",
+    "fin_exclusivo": "2026-04-01",
+    "meses_disponibles": 36,
+    "filas_con_actividad": 3705677,
+    "granularidad": "resumen por cliente y mes; los meses sin fila representan ausencia de compras, reclamos e interacciones"
+  },
+  "corte_variables": "2026-04-01",
+  "fin_objetivo_exclusivo": "2026-10-01",
+  "ventana_features_meses": 12,
+  "churn_definicion": "cero compras entre 2026-04-01 inclusive y 2026-10-01 exclusive",
+  "churn_observado": 0.2393783783783784,
+  "demografia_incompleta": 0.08,
+  "supuestos": "Se simulan 185000 clientes recurrentes para demostrar el flujo; el caso informa clientes registrados, no que todos sean recurrentes. El modelo usa atributos de los 12 meses anteriores al corte, derivados de un historial agregado de 36 meses. La etiqueta se genera para una ventana futura de seis meses.",
+  "limitaciones": "Los datos y asociaciones son sintéticos. El historial mensual agregado no representa transacciones reales. Las métricas no demuestran causalidad, eficacia de campañas ni desempeño en clientes reales."
+}
