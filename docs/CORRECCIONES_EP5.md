@@ -35,3 +35,16 @@ El notebook EDA cubre diccionario y traducción, inspección, holdout estratific
 El informe de EP3 se conserva en docs/Encargo 2.docx como línea base. No se alteraron sus compromisos. Se debe registrar en el tablero real el trabajo efectuado, responsables, fechas, esfuerzo, estado y desviaciones; adjuntar enlaces o capturas verificables y calcular el avance contra tareas ponderadas del plan. El enlace a Jira presente en el documento no fue consultado. No se inventaron responsables, costos, aprobaciones ni porcentajes de avance.
 
 Se mantiene pendiente elaborar el dashboard comprometido en Power BI, el informe de ejecución de 5–8 páginas y la presentación. El CSV de riesgo cubre solo clientes de test para demostración; no constituye despliegue comercial sobre todos los clientes.
+
+
+## Actualización del 1 de noviembre de 2026
+
+Se aplica calibración sigmoide mediante CV3 únicamente sobre 118.400 clientes de ajuste. Se mantiene validación de 29.600 para fijar umbral y comparar Brier y log loss. No se reajusta con todo desarrollo después de fijar el umbral. Test de 37.000 ya había sido observado en versiones previas; se reporta explícitamente como reevaluación, no como validación independiente nueva.
+
+Los JSON de métricas y CSV de predicciones antiguos se sincronizan como alias de la salida final calibrada. La auditoría regional, las matrices y curvas se regeneran a partir de las mismas puntuaciones. La lista de predictores pasa a tener una única fuente de entrenamiento oficial en modeling.py; analyze.py no permite sobrescribirla con el protocolo anterior.
+
+Se añade predict.py para inferencia sin etiquetas y top5_shap_final.csv para cubrir la visualización de cinco factores del plan EP3. SHAP describe el score base antes de calibración, no causalidad ni variación de la probabilidad calibrada. Se refuerzan verificaciones de igualdad entre alias, umbral, auditoría, Brier y predicción tras deserialización.
+
+Evidencia de ejecución: notebook 03 reejecutado, controles del verificador y versiones de entorno fijadas. Los notebooks 01 y 02 y el historial sintético de 36 meses se conservan de la entrega del equipo y se verifican por sus contratos; no se declara una reejecución completa de generación en esta actualización.
+
+Las métricas numéricas vigentes son exclusivamente las de outputs/model/metricas_modelado_avanzado_test.json. Las cifras de apartados anteriores documentan el historial de iteraciones y no deben copiarse al informe final. Falta incorporar el PBIX actualizado y evidencias actuales de Jira. No se publicaron commits ni se modificó Jira desde esta sesión.

@@ -1,0 +1,5 @@
+PASS: cohorte, 36 meses históricos derivados, ventanas temporales, calidad, splits, modelo y notebooks.
+PASS: predicciones finales, alias idénticos, métricas, auditoría regional y modelo serializado coherentes.
+
+PASS: inferencia de 30 clientes sin etiqueta contrastada con predicción canónica.
+Notebook 03 reejecutado. Notebooks 01 y 02 conservados y contratos de datos verificados.

@@ -24,15 +24,19 @@ La probabilidad de abandono se calibra a un 24% esperado y las etiquetas se sort
 
 ## Entrenamiento y evaluación
 
-El EDA separa una vez los clientes en 80% train y 20% holdout estratificado; el holdout se guarda y no se consulta durante la exploración, selección ni ingeniería de variables. El notebook de modelado carga solo train, compara pesos de clase y Balanced Random Forest sin sobremuestrear por defecto, evalúa clustering en una muestra común, y usa Optuna para ajustar regresión logística, Random Forest, Extra Trees y Balanced Random Forest con una validación interna. Después compara los modelos optimizados con métricas y tiempos en esa misma validación. El modelo y el umbral se eligen antes de cargar test, se reajustan con todo train y finalmente se evalúan una sola vez en holdout. Las matrices procesadas se guardan en `data/processed/train/train.csv` y `data/processed/test/test.csv`, con transformaciones ajustadas exclusivamente con train. Esta división es por clientes de una misma cohorte; no reemplaza una futura validación temporal con varias cohortes.
+El EDA separa clientes en 80% desarrollo (148.000) y 20% test (37.000). El desarrollo se divide en 118.400 clientes de ajuste y 29.600 de validación. Se comparan familias, balanceo y parámetros con Optuna en validación. El modelo seleccionado se calibra con sigmoide y CV3 dentro de los 118.400 clientes: el preprocesamiento se ajusta dentro de cada fold y la calibración usa scores fuera de fold. Se fija el umbral por F1 en los 29.600 de validación y no se reajusta incorporando esa validación. Se mide Brier, log loss y curva de fiabilidad. Las matrices procesadas se exportan con el preprocesador final.
 
-La lista `FEATURES` en `src/analyze.py` limita explícitamente las entradas al modelo. Se excluyen ID, etiqueta, información futura, región y comuna. Edad se conserva como variable de demostración; su pertinencia y posibles diferencias por edad requieren revisión antes de uso real. La auditoría regional es descriptiva; no acredita ausencia de sesgos. Los niveles de riesgo usan cortes ilustrativos de 0,20 y 0,50, distintos del umbral binario optimizado; deben ajustarse a capacidad y costos de campañas.
+El test ya fue inspeccionado en versiones anteriores. La actualización es una **reevaluación del prototipo**, no una nueva validación confirmatoria independiente. Se necesita una cohorte temporal nueva para evaluar desempeño futuro. No se debe repetir selección de modelos mirando test. El modelo usa una cohorte de clientes sintéticos; no acredita utilidad comercial real.
+
+La lista `FEATURES` en `src/modeling.py` limita explícitamente las entradas al modelo. Se excluyen ID, etiqueta, información futura, región y comuna. Edad se conserva como variable de demostración; su pertinencia y posibles diferencias por edad requieren revisión antes de uso real. La auditoría regional es descriptiva; no acredita ausencia de sesgos. Los niveles de riesgo usan cortes ilustrativos de 0,20 y 0,50, distintos del umbral binario optimizado; deben ajustarse a capacidad y costos de campañas.
 
 ## Archivos
 
 - `src/generate_data.py`: generador con supuestos y metadatos.
 - `src/paths.py`: rutas absolutas del proyecto y rutas canónicas de datos y artefactos; se importan en scripts y notebooks.
-- `src/analyze.py`: pipeline inicial de preparación, entrenamiento y exportaciones.
+- `src/analyze.py`: compatibilidad de la lista de variables; no sobrescribe el modelo final.
+- `src/predict.py`: puntuación de nuevas filas sin requerir etiqueta futura.
+- `docs/GUIA_POWER_BI_FINAL.md`: conexión del dashboard a las salidas finales.
 - `src/modeling.py`: experimentos reutilizables de balanceo, clustering, Optuna, comparación supervisada y evaluación final.
 - `src/validate_notebook_execution.py` y `src/verify_project.py`: ejecución controlada y verificación del proyecto.
 - `src/check_notebook_execution.py`: acceso alternativo al validador de notebooks.
@@ -51,10 +55,28 @@ Cada sección de los notebooks debe comenzar indicando qué se hará y por qué 
 
 El EDA exporta a `data/processed/train/` la fuente de train, su versión limpia y el dataset inicial del dashboard; el holdout permanece en `data/raw/test/test.csv`. El procesamiento genera `data/processed/train/train.csv` y `data/processed/test/test.csv` con el mismo preprocesador ajustado sobre train. Las comparaciones y artefactos de entrenamiento se guardan en la subcarpeta `train/`; puntuaciones y auditorías del holdout, en `test/`. El dataset de dashboard es una base inicial sin predicciones.
 
-Para una demostración se pueden importar `data/processed/train/dashboard_train.csv`, `data/processed/test/predicciones_modelo_final_test.csv` y `data/processed/test/auditoria_regional.csv` en Power BI. Este paquete no incluye un dashboard Power BI terminado. Los modelos joblib están en `outputs/model/` y son para el entorno de confianza del proyecto; solo cargar modelos de origen conocido.
+Para una demostración se pueden importar `data/processed/train/dashboard_train.csv`, `data/processed/test/predicciones_modelo_final_test.csv` y `data/processed/test/auditoria_regional.csv` en Power BI. Este paquete no incluye el archivo PBIX del equipo: debe actualizarse siguiendo docs/GUIA_POWER_BI_FINAL.md. Los modelos joblib están en `outputs/model/` y son para el entorno de confianza del proyecto; solo cargar modelos de origen conocido.
 
 ## Alcance y pendientes EP5
 
 Los documentos originales de factibilidad y planificación se conservan como línea base, sin modificarlos retroactivamente. Revisar `docs/CORRECCIONES_EP5.md`. El tablero Jira y su historial no fueron consultados ni modificados: faltan las evidencias reales de responsables, fechas, avance y comparación contra EP3. No se afirma un porcentaje de avance global ni cumplimiento del presupuesto. El informe final de 5–8 páginas y la presentación tampoco están incluidos.
 
 Las métricas miden recuperación de patrones diseñados por el generador. No prueban capacidad predictiva real, causalidad, ahorro, fidelización efectiva ni resultados de un piloto. Antes de uso comercial se necesitan datos reales autorizados, cohortes temporales independientes, validación comercial, revisión de variables y monitoreo.
+
+## Fuente única de resultados finales
+
+`outputs/model/metricas_modelado_avanzado_test.json` y `metricas_test.json` son alias idénticos. Los modelos `modelo_retailnova_avanzado.joblib` y `modelo_retailnova.joblib` corresponden al mismo pipeline calibrado. `data/processed/test/predicciones_modelo_final_test.csv` y `clientes_riesgo_test.csv` contienen exactamente las mismas puntuaciones. La auditoría regional y los gráficos de evaluación se recalculan desde esa fuente final. Las comparaciones de candidatos en validación se conservan como experimentos previos, no son las métricas del modelo calibrado final.
+
+SHAP explica el score del clasificador base antes de calibración. El CSV `top5_shap_final.csv` permite mostrar cinco factores en Power BI. Sus magnitudes no son cambios porcentuales en la probabilidad calibrada. Los cortes Bajo/Medio/Alto son ilustrativos y no se confunden con el umbral binario optimizado.
+
+### Puntuar datos nuevos
+
+```bash
+python src/predict.py --input data/raw/test/test.csv --output data/processed/test/nuevas_puntuaciones.csv
+```
+
+El comando es ilustrativo; para puntuar futuros clientes, sustituir input por una tabla con ID único y las variables previas al corte. No requiere `churn_6m` ni información posterior. Antes de inferencia revisar que las ventanas y definiciones coincidan.
+
+### Entorno verificado
+
+`requirements-lock.txt` registra versiones del entorno de esta corrección. Los notebooks 01 y 02 se conservaron de la entrega del equipo; se reejecutó el notebook 03 y el verificador integral con los nuevos resultados. No se reconstruyó nuevamente el historial de 36 meses al aplicar esta corrección.

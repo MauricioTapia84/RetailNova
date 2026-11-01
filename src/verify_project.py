@@ -143,3 +143,30 @@ for path in sorted(NOTEBOOKS_DIR.glob('*.ipynb')):
             assert cell['execution_count'] is not None
             assert all(o['output_type']!='error' for o in cell['outputs'])
 print('PASS: cohorte, 36 meses históricos derivados, ventanas temporales, calidad, splits, modelo y notebooks.')
+
+# Contratos del modelo final: alias, auditoría, calibración e inferencia.
+import joblib
+from paths import SCORED_TEST_PATH, REGIONAL_AUDIT_PATH, TEST_METRICS_PATH
+from modeling import FEATURES as FINAL_FEATURES, FORBIDDEN_FEATURES
+assert set(FEATURES) == set(FINAL_FEATURES)
+assert not set(FINAL_FEATURES) & FORBIDDEN_FEATURES
+canonical = pd.read_csv(FINAL_MODEL_SCORED_TEST_PATH)
+pd.testing.assert_frame_equal(canonical, pd.read_csv(SCORED_TEST_PATH))
+assert json.loads(ADVANCED_TEST_METRICS_PATH.read_text()) == json.loads(TEST_METRICS_PATH.read_text())
+metrics = json.loads(ADVANCED_TEST_METRICS_PATH.read_text())
+audit = pd.read_csv(REGIONAL_AUDIT_PATH).set_index('region')
+from sklearn.metrics import recall_score, precision_score, brier_score_loss
+for region, group in canonical.groupby('region'):
+    assert audit.loc[region, 'clientes_test'] == len(group)
+    assert np.isclose(audit.loc[region, 'recall'], recall_score(group.abandono_observado, group.prediccion))
+    assert np.isclose(audit.loc[region, 'precision'], precision_score(group.abandono_observado, group.prediccion))
+assert np.isclose(metrics['brier_test'], brier_score_loss(canonical.abandono_observado, canonical.probabilidad_abandono))
+assert canonical.probabilidad_abandono.between(0, 1).all()
+assert metrics['train_ajuste_y_calibracion_cv']==118400 and metrics['validacion_umbral']==29600
+assert ((canonical.probabilidad_abandono >= metrics['umbral_elegido_en_validacion']).astype(int)==canonical.prediccion).all()
+artifact = joblib.load(ADVANCED_MODEL_PATH)
+sample = raw_test.head(20).copy()
+sample['tasa_devoluciones'] = sample.devoluciones_12m / sample.cantidad_compras_12m.clip(lower=1)
+expected = canonical.set_index('id_cliente').loc[sample.id_cliente, 'probabilidad_abandono']
+assert np.allclose(artifact['pipeline'].predict_proba(sample[FINAL_FEATURES])[:,1], expected)
+print('PASS: predicciones finales, alias idénticos, métricas, auditoría regional y modelo serializado coherentes.')

@@ -32,7 +32,9 @@ from sklearn.metrics import (
     silhouette_score,
 )
 from sklearn.mixture import GaussianMixture
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.calibration import CalibratedClassifierCV, calibration_curve
+from sklearn.metrics import brier_score_loss, log_loss
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, RobustScaler
 
@@ -78,6 +80,7 @@ FEATURES = [
 ]
 FORBIDDEN_FEATURES = {
     "id_cliente",
+    "prioridad_atencion",
     TARGET,
     "compras_periodo_objetivo",
     "fecha_ultima_compra_al_cierre",
@@ -564,7 +567,11 @@ def _estimator_from_params(algorithm, parameters):
 
 
 def evaluate_final_test(train, test, selection, prepared):
-    """Reajusta sobre todo train y evalúa test una única vez."""
+    """Calibra con CV solo en fit; fija umbral en validación y evalúa test.
+
+    Test ya fue inspeccionado en versiones anteriores: esta es una reevaluación
+    del prototipo, no un nuevo holdout independiente.
+    """
     _ensure_output_directories()
     estimator = _estimator_from_params(
         selection["algoritmo"], selection["parametros"]
@@ -576,7 +583,33 @@ def evaluate_final_test(train, test, selection, prepared):
     y_train = train[TARGET].astype(int)
     X_test = test[FEATURES]
     y_test = test[TARGET].astype(int)
-    pipeline.fit(X_train, y_train)
+    # Ensemble=False: calibrador con predicciones out-of-fold; pipeline base
+    # reajustado solo en los 118400 clientes de fit. Validación no se incorpora.
+    fit_idx, valid_idx = prepared["train_idx"], prepared["valid_idx"]
+    pipeline = CalibratedClassifierCV(
+        estimator=pipeline, method="sigmoid", ensemble=False,
+        cv=StratifiedKFold(n_splits=3, shuffle=True, random_state=RANDOM_STATE),
+        n_jobs=1,
+    )
+    pipeline.fit(X_train.iloc[fit_idx], y_train.iloc[fit_idx])
+    base_pipeline = pipeline.calibrated_classifiers_[0].estimator
+    vp = pipeline.predict_proba(X_train.iloc[valid_idx])[:, 1]
+    vy = y_train.iloc[valid_idx]
+    v_precision, v_recall, v_thresholds = precision_recall_curve(vy, vp)
+    vf1 = 2 * v_precision[:-1] * v_recall[:-1] / np.maximum(v_precision[:-1] + v_recall[:-1], 1e-12)
+    selection = dict(selection)
+    selection["umbral"] = float(v_thresholds[int(np.argmax(vf1))])
+    selection["average_precision_validacion"] = float(average_precision_score(vy, vp))
+    selection["f1_validacion"] = float(np.max(vf1))
+    # Comparación de calibración fijada en validación, sin elegir con test.
+    vb = base_pipeline.predict_proba(X_train.iloc[valid_idx])[:, 1]
+    calibration_report = []
+    for name, values in [("sin_calibrar", vb), ("sigmoide_cv3", vp)]:
+        calibration_report.append({"version": name, "brier_validacion": brier_score_loss(vy, values),
+            "log_loss_validacion": log_loss(vy, values), "promedio_predicho_validacion": float(values.mean()),
+            "abandono_observado_validacion": float(vy.mean())})
+    pd.DataFrame(calibration_report).to_csv(PROCESSED_TRAIN_DIR / "comparacion_calibracion.csv", index=False)
+    # El método y el umbral ya están fijados antes de evaluar la nueva versión en test.
     probabilities = pipeline.predict_proba(X_test)[:, 1]
     predictions = probabilities >= selection["umbral"]
     train_partition = pd.DataFrame(
@@ -602,7 +635,14 @@ def evaluate_final_test(train, test, selection, prepared):
         "umbral_elegido_en_validacion": selection["umbral"],
         "average_precision_validacion": selection["average_precision_validacion"],
         "f1_validacion": selection["f1_validacion"],
-        "train_completo_refit": int(len(train)),
+        "train_ajuste_y_calibracion_cv": int(len(fit_idx)),
+        "validacion_umbral": int(len(valid_idx)),
+        "calibracion": "sigmoide CV3 con predicciones out-of-fold sobre fit",
+        "brier_test": float(brier_score_loss(y_test, probabilities)),
+        "log_loss_test": float(log_loss(y_test, probabilities)),
+        "probabilidad_media_test": float(probabilities.mean()),
+        "tasa_abandono_test": float(y_test.mean()),
+        "limitacion_test": "Reevaluación: test ya fue observado en versiones anteriores; se necesita una cohorte independiente para validación confirmatoria.",
         "test": int(len(test)),
         "accuracy": float(accuracy_score(y_test, predictions)),
         "precision": float(precision_score(y_test, predictions, zero_division=0)),
@@ -643,7 +683,58 @@ def evaluate_final_test(train, test, selection, prepared):
         },
         ADVANCED_MODEL_PATH,
     )
-    _save_test_plots(y_test, probabilities, matrix, pipeline, X_test)
+    # Salidas canónicas y alias compatibles con el dashboard anterior.
+    from paths import (SCORED_TEST_PATH, REGIONAL_AUDIT_PATH, TEST_METRICS_PATH,
+        MODEL_PATH, MODEL_COEFFICIENTS_PATH, TRAIN_PROCESSED_PATH, TEST_PROCESSED_PATH)
+    scored.to_csv(SCORED_TEST_PATH, index=False)
+    TEST_METRICS_PATH.write_text(json.dumps(metrics, ensure_ascii=False, indent=2), encoding="utf-8")
+    joblib.dump({"pipeline": pipeline, "features": FEATURES, "threshold": selection["umbral"],
+        "algorithm": selection["algoritmo"], "calibration": "sigmoid_cv3"}, MODEL_PATH)
+    regional = []
+    for region, group in scored.groupby("region"):
+        truth, prediction = group.abandono_observado, group.prediccion
+        regional.append({"region": region, "clientes_test": len(group),
+            "tasa_abandono": float(truth.mean()), "probabilidad_promedio": float(group.probabilidad_abandono.mean()),
+            "recall": recall_score(truth, prediction, zero_division=0),
+            "precision": precision_score(truth, prediction, zero_division=0),
+            "roc_auc": roc_auc_score(truth, group.probabilidad_abandono),
+            "brier": brier_score_loss(truth, group.probabilidad_abandono)})
+    pd.DataFrame(regional).to_csv(REGIONAL_AUDIT_PATH, index=False)
+    pre = base_pipeline.named_steps["preprocess"]
+    names = pre.get_feature_names_out()
+    for frame, target_path in [(train, TRAIN_PROCESSED_PATH), (test, TEST_PROCESSED_PATH)]:
+        values = pre.transform(frame[FEATURES])
+        if hasattr(values, "toarray"): values = values.toarray()
+        processed = pd.DataFrame(values, columns=names)
+        processed.insert(0, "id_cliente", frame.id_cliente.to_numpy())
+        processed[TARGET] = frame[TARGET].to_numpy()
+        temp_matrix = target_path.with_suffix(".tmp")
+        processed.to_csv(temp_matrix, index=False)
+        temp_matrix.replace(target_path)
+    estimator = base_pipeline.named_steps["model"]
+    if hasattr(estimator, "coef_"):
+        pd.DataFrame({"variable_transformada": names, "coeficiente": estimator.coef_[0]}).to_csv(MODEL_COEFFICIENTS_PATH, index=False)
+    fig, ax = plt.subplots(figsize=(6, 5))
+    for label, values in [("Sin calibrar", vb), ("Calibrado", vp)]:
+        observed, predicted = calibration_curve(vy, values, n_bins=10, strategy="quantile")
+        ax.plot(predicted, observed, marker="o", label=label)
+    ax.plot([0, 1], [0, 1], "--", color="gray")
+    ax.set(xlabel="Probabilidad media predicha", ylabel="Frecuencia observada", title="Calibración en validación sintética")
+    ax.legend(); _save_figure(fig, "calibracion_validacion.png")
+    _save_test_plots(y_test, probabilities, matrix, base_pipeline, X_test)
+    # La figura SHAP explica el score del estimador base, no la probabilidad calibrada.
+    import shutil
+    shutil.copyfile(GRAPHS_DIR / "matriz_confusion_modelo_test.png", GRAPHS_DIR / "matriz_confusion.png")
+    fig, ax = plt.subplots(figsize=(7, 4))
+    regional_frame = pd.DataFrame(regional)
+    regional_frame.set_index("region")[["tasa_abandono", "probabilidad_promedio"]].mul(100).plot.bar(ax=ax)
+    ax.set(ylabel="Porcentaje", title="Modelo final calibrado por región")
+    ax.tick_params(axis="x", rotation=10); _save_figure(fig, "resumen_regional.png")
+    # Escritura final atómica y alias de bytes idénticos.
+    temporary = FINAL_MODEL_SCORED_TEST_PATH.with_suffix(".tmp")
+    scored.to_csv(temporary, index=False)
+    temporary.replace(FINAL_MODEL_SCORED_TEST_PATH)
+    shutil.copyfile(FINAL_MODEL_SCORED_TEST_PATH, SCORED_TEST_PATH)
     return metrics, scored
 
 
@@ -766,6 +857,19 @@ def _save_shap_plot(pipeline, X_test, sample_size=200):
     values = explanation.values
     if values.ndim == 3:
         values = values[:, :, 1]
+    importance = pd.DataFrame({"variable_transformada": preprocessor.get_feature_names_out(),
+        "importancia_shap": np.abs(values).mean(axis=0)})
+    def original_feature(name):
+        suffix = name.split("__", 1)[-1]
+        for feature in sorted(FEATURES, key=len, reverse=True):
+            if suffix == feature or suffix.startswith(feature + "_") or suffix == "missingindicator_" + feature:
+                return feature
+        return suffix
+    importance["variable"] = importance.variable_transformada.map(original_feature)
+    importance = importance.groupby("variable", as_index=False).importancia_shap.sum().sort_values("importancia_shap", ascending=False)
+    importance["interpretacion"] = "Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad"
+    importance.to_csv(PROCESSED_TEST_DIR / "importancia_shap_final.csv", index=False)
+    importance.head(5).to_csv(PROCESSED_TEST_DIR / "top5_shap_final.csv", index=False)
     figure = plt.figure(figsize=(9, 6))
     shap.summary_plot(
         values,
@@ -774,7 +878,7 @@ def _save_shap_plot(pipeline, X_test, sample_size=200):
         show=False,
         plot_size=None,
     )
-    plt.title("Importancia SHAP — muestra de test reservado")
+    plt.title("SHAP del score base antes de calibración — muestra sintética")
     _save_figure(figure, "explicabilidad_shap_test.png")
 
 
