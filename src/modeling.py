@@ -331,19 +331,25 @@ def evaluate_clustering(train):
     kmeans_k = int(best_kmeans["k"])
     kmeans_model = fitted_models[f"KMeans k={kmeans_k}"]
     kmeans_labels = kmeans_model.predict(matrix)
-    figure, axes = plt.subplots(1, 2, figsize=(13, 4.8))
+    elbow_figure, elbow_ax = plt.subplots(figsize=(6.4, 4.8))
     elbow = result[result["algoritmo"] == "KMeans"].sort_values("k")
-    axes[0].plot(elbow["k"], elbow["inercia"], marker="o", color="#0072B2")
-    axes[0].set(
+    elbow_ax.plot(elbow["k"], elbow["inercia"], marker="o", color="#0072B2", linewidth=2)
+    elbow_ax.grid(True, linestyle="--", linewidth=0.7, alpha=0.45)
+    elbow_ax.set(
         title="Método del codo — K-Means",
         xlabel="Número de clústeres (k)",
         ylabel="Inercia",
     )
-    axes[1].scatter(
+    elbow_figure.tight_layout()
+    _save_figure(elbow_figure, "clustering_codo.png")
+
+    pca_figure, pca_ax = plt.subplots(figsize=(6.8, 4.8))
+    pca_ax.scatter(
         coordinates[:, 0], coordinates[:, 1],
-        c=kmeans_labels, cmap="tab10", s=12, alpha=0.65,
+        c=kmeans_labels, cmap="tab10", s=18, alpha=0.72,
     )
-    axes[1].legend(
+    pca_ax.grid(True, linestyle="--", linewidth=0.7, alpha=0.45)
+    pca_ax.legend(
         handles=[
             plt.Line2D(
                 [], [], marker="o", linestyle="", color=plt.get_cmap("tab10")(cluster),
@@ -354,13 +360,45 @@ def evaluate_clustering(train):
         title="K-Means",
         frameon=False,
     )
-    axes[1].set(
+    pca_ax.set(
         title=f"K-Means en PCA — k={kmeans_k}",
         xlabel=f"PC1 ({pca.explained_variance_ratio_[0]:.1%})",
         ylabel=f"PC2 ({pca.explained_variance_ratio_[1]:.1%})",
     )
-    figure.tight_layout()
-    _save_figure(figure, "clustering_codo_pca.png")
+    pca_figure.tight_layout()
+    _save_figure(pca_figure, "clustering_pca.png")
+
+    combined_figure, combined_axes = plt.subplots(1, 2, figsize=(13, 4.8))
+    combined_axes[0].plot(elbow["k"], elbow["inercia"], marker="o", color="#0072B2", linewidth=2)
+    combined_axes[0].grid(True, linestyle="--", linewidth=0.7, alpha=0.45)
+    combined_axes[0].set(
+        title="Método del codo — K-Means",
+        xlabel="Número de clústeres (k)",
+        ylabel="Inercia",
+    )
+    combined_axes[1].scatter(
+        coordinates[:, 0], coordinates[:, 1],
+        c=kmeans_labels, cmap="tab10", s=18, alpha=0.72,
+    )
+    combined_axes[1].grid(True, linestyle="--", linewidth=0.7, alpha=0.45)
+    combined_axes[1].legend(
+        handles=[
+            plt.Line2D(
+                [], [], marker="o", linestyle="", color=plt.get_cmap("tab10")(cluster),
+                label=f"Clúster {cluster}",
+            )
+            for cluster in range(kmeans_k)
+        ],
+        title="K-Means",
+        frameon=False,
+    )
+    combined_axes[1].set(
+        title=f"K-Means en PCA — k={kmeans_k}",
+        xlabel=f"PC1 ({pca.explained_variance_ratio_[0]:.1%})",
+        ylabel=f"PC2 ({pca.explained_variance_ratio_[1]:.1%})",
+    )
+    combined_figure.tight_layout()
+    _save_figure(combined_figure, "clustering_codo_pca.png")
     return result, selected_name, kmeans_k
 
 
@@ -553,7 +591,8 @@ def _estimator_from_params(algorithm, parameters):
     params = dict(parameters)
     params["random_state"] = RANDOM_STATE
     if algorithm == "LogisticRegression":
-        params.update(solver="liblinear", max_iter=500)
+        params.setdefault("solver", "liblinear")
+        params.setdefault("max_iter", 500)
         return LogisticRegression(**params)
     params["n_jobs"] = 2
     if algorithm == "RandomForest":
@@ -739,30 +778,34 @@ def evaluate_final_test(train, test, selection, prepared):
 
 
 def _save_test_plots(y_test, probabilities, matrix, pipeline, X_test):
-    figure, axes = plt.subplots(1, 2, figsize=(12, 4.8))
     false_positive, true_positive, _ = roc_curve(y_test, probabilities)
-    axes[0].plot(false_positive, true_positive, color="#0072B2", label="Modelo")
-    axes[0].plot([0, 1], [0, 1], linestyle="--", color="#777777", label="Azar")
-    axes[0].set(
+    figure, axis = plt.subplots(figsize=(6.6, 4.8))
+    axis.plot(false_positive, true_positive, color="#0072B2", label="Modelo")
+    axis.plot([0, 1], [0, 1], linestyle="--", color="#777777", label="Azar")
+    axis.set(
         title="Curva ROC — test reservado",
         xlabel="Tasa de falsos positivos",
         ylabel="Tasa de verdaderos positivos",
     )
-    axes[0].legend(frameon=False)
+    axis.legend(frameon=False)
+    figure.tight_layout()
+    _save_figure(figure, "roc_test.png")
+
     pr_precision, pr_recall, _ = precision_recall_curve(y_test, probabilities)
-    axes[1].plot(pr_recall, pr_precision, color="#D55E00", label="Modelo")
-    axes[1].axhline(
+    figure, axis = plt.subplots(figsize=(6.6, 4.8))
+    axis.plot(pr_recall, pr_precision, color="#D55E00", label="Modelo")
+    axis.axhline(
         float(np.mean(y_test)), linestyle="--", color="#777777",
         label="Prevalencia de abandono",
     )
-    axes[1].set(
+    axis.set(
         title="Precision–Recall — test reservado",
         xlabel="Recall",
         ylabel="Precision",
     )
-    axes[1].legend(frameon=False)
+    axis.legend(frameon=False)
     figure.tight_layout()
-    _save_figure(figure, "evaluacion_curvas_test.png")
+    _save_figure(figure, "precision_recall_test.png")
 
     figure, axis = plt.subplots(figsize=(6.8, 5.2))
     image = axis.imshow(matrix, cmap="Blues")
@@ -807,35 +850,100 @@ def _save_gain_lift_plot(y_test, probabilities):
         gains["clientes"].cumsum() / len(ranked)
     )
     gains.to_csv(GAIN_LIFT_TEST_PATH, index=False)
-    figure, axes = plt.subplots(1, 2, figsize=(12, 4.6))
-    axes[0].plot(
+
+    figure, axis = plt.subplots(figsize=(7, 4.7))
+    axis.plot(
         gains["decil"], gains["ganancia_acumulada"] * 100,
         marker="o", color="#0072B2", label="Modelo",
     )
-    axes[0].plot(
+    axis.plot(
         gains["decil"], gains["decil"] * 10,
         linestyle="--", color="#777777", label="Selección aleatoria",
     )
-    axes[0].set(
+    axis.set(
         title="Ganancia acumulada — test",
         xlabel="Decil acumulado de mayor riesgo",
         ylabel="Abandonos capturados (%)",
     )
-    axes[1].plot(
+    axis.legend(frameon=False)
+    axis.set_xticks(range(1, 11))
+    figure.tight_layout()
+    _save_figure(figure, "ganancia_acumulada_test.png")
+
+    figure, axis = plt.subplots(figsize=(7, 4.7))
+    axis.plot(
         gains["decil"], gains["lift_acumulado"],
         marker="o", color="#009E73", label="Lift acumulado",
     )
-    axes[1].axhline(1, linestyle="--", color="#777777", label="Referencia aleatoria")
-    axes[1].set(
+    axis.axhline(1, linestyle="--", color="#777777", label="Referencia aleatoria")
+    axis.set(
         title="Lift acumulado — test",
         xlabel="Decil acumulado de mayor riesgo",
         ylabel="Lift frente a selección aleatoria",
     )
-    for axis in axes:
+    axis.legend(frameon=False)
+    axis.set_xticks(range(1, 11))
+    figure.tight_layout()
+    _save_figure(figure, "lift_acumulado_test.png")
+
+    combined_figure, combined_axes = plt.subplots(1, 2, figsize=(12, 4.6))
+    combined_axes[0].plot(
+        gains["decil"], gains["ganancia_acumulada"] * 100,
+        marker="o", color="#0072B2", label="Modelo",
+    )
+    combined_axes[0].plot(
+        gains["decil"], gains["decil"] * 10,
+        linestyle="--", color="#777777", label="Selección aleatoria",
+    )
+    combined_axes[0].set(
+        title="Ganancia acumulada — test",
+        xlabel="Decil acumulado de mayor riesgo",
+        ylabel="Abandonos capturados (%)",
+    )
+    combined_axes[1].plot(
+        gains["decil"], gains["lift_acumulado"],
+        marker="o", color="#009E73", label="Lift acumulado",
+    )
+    combined_axes[1].axhline(1, linestyle="--", color="#777777", label="Referencia aleatoria")
+    combined_axes[1].set(
+        title="Lift acumulado — test",
+        xlabel="Decil acumulado de mayor riesgo",
+        ylabel="Lift frente a selección aleatoria",
+    )
+    for axis in combined_axes:
         axis.legend(frameon=False)
         axis.set_xticks(range(1, 11))
-    figure.tight_layout()
-    _save_figure(figure, "ganancia_lift_test.png")
+    combined_figure.tight_layout()
+    _save_figure(combined_figure, "ganancia_lift_test.png")
+
+
+def _human_readable_shap_name(name):
+    clean_name = name.replace("num__", "").replace("cat__", "")
+    as_feature = clean_name.split("__")[-1]
+    if as_feature.startswith("canal_compra_"):
+        value = as_feature.replace("canal_compra_", "")
+        return f"Canal de compra: {value}"
+    if as_feature.startswith("categoria_principal_"):
+        value = as_feature.replace("categoria_principal_", "")
+        return f"Categoría principal: {value}"
+    feature_map = {
+        "edad": "Edad",
+        "antiguedad_meses": "Antigüedad (meses)",
+        "cantidad_compras_12m": "Cantidad de compras (12m)",
+        "monto_promedio_compra": "Monto promedio por compra",
+        "proporcion_compras_promocion": "Proporción compras en promoción",
+        "devoluciones_12m": "Devoluciones (12m)",
+        "reclamos_12m": "Reclamos (12m)",
+        "interacciones_campanas_12m": "Interacciones campañas (12m)",
+        "recencia_dias": "Recencia (días)",
+        "tasa_devoluciones": "Tasa de devoluciones",
+        "gasto_total_12m": "Gasto total (12m)",
+        "ratio_devoluciones_vs_compras": "Ratio devoluciones / compras",
+        "promedio_reclamos_por_compra": "Promedio reclamos / compra",
+        "interacciones_por_compra": "Interacciones / compra",
+        "recencia_normalizada": "Recencia normalizada",
+    }
+    return feature_map.get(as_feature, as_feature.replace("_", " ").title())
 
 
 def _save_shap_plot(pipeline, X_test, sample_size=200):
@@ -866,15 +974,20 @@ def _save_shap_plot(pipeline, X_test, sample_size=200):
                 return feature
         return suffix
     importance["variable"] = importance.variable_transformada.map(original_feature)
+    importance["nombre_legible"] = importance["variable"].map(_human_readable_shap_name)
     importance = importance.groupby("variable", as_index=False).importancia_shap.sum().sort_values("importancia_shap", ascending=False)
+    importance["nombre_legible"] = importance["variable"].map(_human_readable_shap_name)
     importance["interpretacion"] = "Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad"
     importance.to_csv(PROCESSED_TEST_DIR / "importancia_shap_final.csv", index=False)
     importance.head(5).to_csv(PROCESSED_TEST_DIR / "top5_shap_final.csv", index=False)
+    feature_labels = [
+        _human_readable_shap_name(name) for name in preprocessor.get_feature_names_out()
+    ]
     figure = plt.figure(figsize=(9, 6))
     shap.summary_plot(
         values,
         explanation_data,
-        feature_names=preprocessor.get_feature_names_out(),
+        feature_names=feature_labels,
         show=False,
         plot_size=None,
     )

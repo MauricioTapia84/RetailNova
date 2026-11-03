@@ -1,13 +1,13 @@
-variable,importancia_shap,interpretacion
-recencia_dias,0.31028338777277986,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
-reclamos_12m,0.2048442487920632,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
-cantidad_compras_12m,0.15524568883693418,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
-interacciones_campanas_12m,0.14510614178268802,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
-categoria_principal,0.10620609960778896,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
-canal_compra,0.10295424036191285,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
-proporcion_compras_promocion,0.07670592770695078,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
-devoluciones_12m,0.03914731434759007,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
-tasa_devoluciones,0.03264018129930109,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
-antiguedad_meses,0.008071132156307843,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
-monto_promedio_compra,0.002007060522518142,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
-edad,0.0016836458083400452,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
+variable,importancia_shap,nombre_legible,interpretacion
+recencia_dias,0.309755608017938,Recencia (días),Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
+reclamos_12m,0.20424219426023504,Reclamos (12m),Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
+cantidad_compras_12m,0.15498543708944468,Cantidad de compras (12m),Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
+interacciones_campanas_12m,0.14483117161885878,Interacciones campañas (12m),Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
+categoria_principal,0.102905593854355,Categoria Principal,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
+canal_compra,0.09973065419989839,Canal Compra,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
+proporcion_compras_promocion,0.076815035659933,Proporción compras en promoción,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
+devoluciones_12m,0.03921129867150317,Devoluciones (12m),Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
+tasa_devoluciones,0.03237771626363219,Tasa de devoluciones,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
+antiguedad_meses,0.00815671045945461,Antigüedad (meses),Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
+monto_promedio_compra,0.0016841280146437862,Monto promedio por compra,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
+edad,0.0016024184995760934,Edad,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad

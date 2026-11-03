@@ -1,18 +1,18 @@
 variable_transformada,coeficiente
-num__edad,0.0030496065041549737
-num__antiguedad_meses,-0.014880771693578708
-num__cantidad_compras_12m,-0.3589495695651658
-num__monto_promedio_compra,0.00263407412620555
-num__proporcion_compras_promocion,0.1462809501461188
-num__devoluciones_12m,0.08664744211507332
-num__reclamos_12m,0.5060381640120143
-num__interacciones_campanas_12m,-0.24281482895362771
-num__recencia_dias,0.5721959692127843
-num__tasa_devoluciones,0.05414678374655571
-num__missingindicator_edad,-0.001884198902721855
-cat__canal_compra_Comercio electrónico,-0.07464305906565316
-cat__canal_compra_Mixto,-0.10373923587985068
-cat__canal_compra_Tienda física,-0.06257592465392015
-cat__categoria_principal_Electrodomésticos,-0.08117497779587893
-cat__categoria_principal_Hogar,-0.07072562527653871
-cat__categoria_principal_Tecnología,-0.08905761652781423
+num__edad,0.003037826843875335
+num__antiguedad_meses,-0.015038552679738828
+num__cantidad_compras_12m,-0.3583478314206813
+num__monto_promedio_compra,0.002210256232345887
+num__proporcion_compras_promocion,0.1464890229184306
+num__devoluciones_12m,0.08678906301793539
+num__reclamos_12m,0.5045508751488026
+num__interacciones_campanas_12m,-0.2423547048508345
+num__recencia_dias,0.5712226865291048
+num__tasa_devoluciones,0.05371138060350701
+num__missingindicator_edad,0.00126841986153353
+cat__canal_compra_Comercio electrónico,-0.0727206869622782
+cat__canal_compra_Mixto,-0.1005842724419341
+cat__canal_compra_Tienda física,-0.06018254678341479
+cat__categoria_principal_Electrodomésticos,-0.07858565789420943
+cat__categoria_principal_Hogar,-0.06836938162525477
+cat__categoria_principal_Tecnología,-0.08653246666816292

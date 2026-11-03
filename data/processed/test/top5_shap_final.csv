@@ -1,6 +1,6 @@
-variable,importancia_shap,interpretacion
-recencia_dias,0.31028338777277986,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
-reclamos_12m,0.2048442487920632,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
-cantidad_compras_12m,0.15524568883693418,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
-interacciones_campanas_12m,0.14510614178268802,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
-categoria_principal,0.10620609960778896,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
+variable,importancia_shap,nombre_legible,interpretacion
+recencia_dias,0.309755608017938,Recencia (días),Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
+reclamos_12m,0.20424219426023504,Reclamos (12m),Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
+cantidad_compras_12m,0.15498543708944468,Cantidad de compras (12m),Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
+interacciones_campanas_12m,0.14483117161885878,Interacciones campañas (12m),Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad
+categoria_principal,0.102905593854355,Categoria Principal,Contribución absoluta media al score base; no a probabilidad calibrada ni causalidad

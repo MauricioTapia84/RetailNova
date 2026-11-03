@@ -1,35 +1,38 @@
 {
   "modelo_seleccionado": "LogisticRegression",
   "parametros": {
-    "C": 1.3311216080736887,
-    "class_weight": "balanced"
+    "C": 0.05,
+    "solver": "lbfgs",
+    "class_weight": "balanced",
+    "max_iter": 5000,
+    "random_state": 42
   },
-  "umbral_elegido_en_validacion": 0.20696606911006812,
-  "average_precision_validacion": 0.41029212816705896,
-  "f1_validacion": 0.44305758420749786,
+  "umbral_elegido_en_validacion": 0.20673469958594803,
+  "average_precision_validacion": 0.4103179761492618,
+  "f1_validacion": 0.4431079467562906,
   "train_ajuste_y_calibracion_cv": 118400,
   "validacion_umbral": 29600,
   "calibracion": "sigmoide CV3 con predicciones out-of-fold sobre fit",
-  "brier_test": 0.1672518036665343,
-  "log_loss_test": 0.5119980117539829,
-  "probabilidad_media_test": 0.23986915745770346,
+  "brier_test": 0.1672503121501082,
+  "log_loss_test": 0.5119943207884882,
+  "probabilidad_media_test": 0.2398654365200587,
   "tasa_abandono_test": 0.2393783783783784,
   "limitacion_test": "Reevaluación: test ya fue observado en versiones anteriores; se necesita una cohorte independiente para validación confirmatoria.",
   "test": 37000,
-  "accuracy": 0.5778648648648649,
-  "precision": 0.32359386413440466,
-  "recall": 0.7002371005983967,
-  "f1": 0.44263640580951363,
-  "roc_auc": 0.6747465887886224,
-  "average_precision": 0.4170055519409012,
+  "accuracy": 0.5773243243243243,
+  "precision": 0.32334861429464473,
+  "recall": 0.7008016258326747,
+  "f1": 0.4425195166292375,
+  "roc_auc": 0.6747536857231313,
+  "average_precision": 0.417011848865305,
   "matriz_confusion_tn_fp_fn_tp": [
     [
-      15179,
-      12964
+      15154,
+      12989
     ],
     [
-      2655,
-      6202
+      2650,
+      6207
     ]
   ],
   "advertencia": "Evaluación sobre datos sintéticos; no acredita desempeño comercial ni validez en clientes reales."
