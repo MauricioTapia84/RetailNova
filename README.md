@@ -1,10 +1,29 @@
 # RetailNova: predicción de abandono y fidelización
 
-Prototipo académico de comercio minorista para la EP5 de Gestión de Proyectos de Datos. Todos los registros son sintéticos. No se reportan resultados de clientes reales.
+Prototipo académico de comercio minorista desarrollado para la EP5 de Gestión de Proyectos de Datos. El objetivo es explorar señales de comportamiento que podrían ayudar a priorizar acciones de fidelización. **Todos los registros son sintéticos**: no representan clientes, compras ni resultados comerciales reales.
 
-## Ejecución
+## Resumen ejecutivo
 
-Python 3.11 o superior. Desde la carpeta raíz:
+- Se generó una cohorte sintética de **185.000 clientes recurrentes** y un historial mensual agregado de **36 meses**, desde abril de 2023 hasta marzo de 2026.
+- El abandono (`churn_6m`) se define como **cero compras desde el 1 de abril de 2026 inclusive hasta el 1 de octubre de 2026 exclusive**.
+- El mejor clasificador seleccionado en validación es una regresión logística con pesos de clase, calibrada con sigmoide CV3. El umbral binario final, elegido en validación, es **0,2067**.
+- En el test sintético de 37.000 clientes, el modelo obtuvo **average precision 0,4170**, **ROC-AUC 0,6748**, **recall 70,08%**, **precision 32,33%** y **F1 44,25%**.
+- Estos resultados son una **reevaluación del prototipo** sobre datos sintéticos, no evidencia de desempeño con clientes reales ni una validación confirmatoria independiente.
+
+## Objetivo y definición temporal
+
+El objetivo de negocio académico es explorar cómo priorizar clientes para posibles acciones de fidelización. El objetivo analítico es estimar abandono en una ventana de seis meses posterior al corte.
+
+- **Corte de predictores:** antes del 1 de abril de 2026.
+- **Ventana objetivo:** del 1 de abril de 2026 inclusive al 1 de octubre de 2026 exclusive.
+- **Etiqueta:** `churn_6m = 1` cuando `compras_periodo_objetivo` es cero; en caso contrario, `0`. Se puede verificar con la fecha de última compra al cierre.
+- **Cohorte:** se simulan clientes con al menos dos compras en los 12 meses previos al corte. Es un supuesto académico; el caso de negocio informa clientes registrados, no que todos sean recurrentes.
+- **Historial:** 36 meses agregados por cliente y mes (abril de 2023–marzo de 2026); los meses sin fila representan ausencia de actividad.
+- **Generación:** semilla 42; prevalencia esperada de abandono cercana al 24%, sin imponer una tasa observada exacta ni crear predictores a partir de la etiqueta.
+
+## Ejecución reproducible
+
+Requiere Python 3.11 o superior. Desde la raíz del proyecto:
 
 ```bash
 python -m pip install -r requirements.txt
@@ -12,71 +31,140 @@ python src/validate_notebook_execution.py
 python src/verify_project.py
 ```
 
-El primer comando instala las dependencias. El segundo ejecuta en orden los tres notebooks: genera la fuente raw, separa train/test, explora solo train, prepara artefactos y ejecuta el modelado. Los gráficos se guardan sin abrir ventanas en `outputs/graphs/`; el modelo y métricas en `outputs/model/`. El tercero comprueba los contratos del dataset, temporalidad, particiones y evidencias. La generación reemplaza los datos sintéticos de forma reproducible con semilla 42.
+El validador ejecuta en orden los tres notebooks: genera la fuente sintética, crea la partición de desarrollo/test, explora y prepara desarrollo, y ejecuta el modelado. El verificador comprueba contratos de datos, ventanas temporales, particiones, artefactos, métricas e inferencia. Los gráficos se guardan en `outputs/graphs/` y los artefactos del modelo en `outputs/model/`.
 
-## Datos y definición temporal
+## Qué se hizo en los notebooks
 
-Se simulan 185.000 clientes previamente recurrentes (mínimo dos compras en los 12 meses anteriores al 1 de abril de 2026). Esta cohorte es un supuesto académico: el caso informa 185.000 registrados, sin afirmar que todos sean recurrentes. `data/raw/historial_mensual_36m.csv.gz` contiene el historial sintético agregado por cliente y mes entre abril de 2023 y marzo de 2026; los meses sin actividad se omiten y equivalen a cero compras, reclamos e interacciones. `data/raw/dataset.csv` contiene el resumen por cliente derivado de ese historial, con variables predictoras calculadas sobre los últimos 12 meses y totales de los 36 meses para trazabilidad. El EDA hace un split estratificado 80/20 y guarda `data/raw/train/train.csv` y `data/raw/test/test.csv`.
+### 1. Generación (`notebooks/01_generacion_datos.ipynb`)
 
-El objetivo es cero compras entre el 1 de abril de 2026 inclusive y el 1 de octubre de 2026 exclusive. Se calcula desde `compras_periodo_objetivo` y se puede contrastar con la fecha de última compra al cierre. Esas dos columnas de auditoría son posteriores al corte y quedan excluidas del modelo. La recencia predictora corresponde exclusivamente a compras anteriores al corte.
+Se creó `data/raw/dataset.csv` con 185.000 registros sintéticos, junto con `data/raw/historial_mensual_36m.csv.gz` y sus metadatos. El historial contiene **3.705.677 filas con actividad**. Se incorporaron variables de compras, gasto, promociones, devoluciones, reclamos, interacciones con campañas, canal y recencia. El conjunto simula datos demográficos incompletos; la edad tiene 8% de faltantes por diseño.
 
-La probabilidad de abandono se calibra a un 24% esperado y las etiquetas se sortean, sin forzar el porcentaje observado ni construir predictores a partir de ellas. El 8% exacto tiene edad faltante; parte de ese grupo también tiene comuna faltante. Se conserva la región para auditar representación: Metropolitana 65%, Valparaíso 20% y Biobío 15% como proporciones esperadas de simulación.
+### 2. Exploración y preparación (`notebooks/02_analisis_exploratorio.ipynb`)
 
-## Entrenamiento y evaluación
+Se documentó el diccionario de variables, la temporalidad y los faltantes, y se realizó una partición estratificada 80/20 con semilla 42:
 
-El EDA separa clientes en 80% desarrollo (148.000) y 20% test (37.000). El desarrollo se divide en 118.400 clientes de ajuste y 29.600 de validación. Se comparan familias, balanceo y parámetros con Optuna en validación. El modelo seleccionado se calibra con sigmoide y CV3 dentro de los 118.400 clientes: el preprocesamiento se ajusta dentro de cada fold y la calibración usa scores fuera de fold. Se fija el umbral por F1 en los 29.600 de validación y no se reajusta incorporando esa validación. Se mide Brier, log loss y curva de fiabilidad. Las matrices procesadas se exportan con el preprocesador final.
+| Partición | Clientes | Uso |
+| --- | ---: | --- |
+| Desarrollo / train | 148.000 | EDA, selección y ajuste |
+| Test reservado | 37.000 | Evaluación final del prototipo |
 
-El test ya fue inspeccionado en versiones anteriores. La actualización es una **reevaluación del prototipo**, no una nueva validación confirmatoria independiente. Se necesita una cohorte temporal nueva para evaluar desempeño futuro. No se debe repetir selección de modelos mirando test. El modelo usa una cohorte de clientes sintéticos; no acredita utilidad comercial real.
+En train se observaron 11.770 edades faltantes (7,95%) y 5.900 comunas faltantes (3,99%); no se detectaron filas duplicadas. Las imputaciones y transformaciones se ajustan dentro de la pipeline, no usando el holdout.
 
-La lista `FEATURES` en `src/modeling.py` limita explícitamente las entradas al modelo. Se excluyen ID, etiqueta, información futura, región y comuna. Edad se conserva como variable de demostración; su pertinencia y posibles diferencias por edad requieren revisión antes de uso real. La auditoría regional es descriptiva; no acredita ausencia de sesgos. Los niveles de riesgo usan cortes ilustrativos de 0,20 y 0,50, distintos del umbral binario optimizado; deben ajustarse a capacidad y costos de campañas.
+### 3. Modelado (`notebooks/03_modelado_abandono.ipynb`)
 
-## Archivos
+Se subdividieron los 148.000 registros de train en 118.400 de ajuste y 29.600 de validación estratificada. El test no se usa para escoger familia, parámetros ni umbral. El notebook incluye:
 
-- `src/generate_data.py`: generador con supuestos y metadatos.
-- `src/paths.py`: rutas absolutas del proyecto y rutas canónicas de datos y artefactos; se importan en scripts y notebooks.
-- `src/analyze.py`: compatibilidad de la lista de variables; no sobrescribe el modelo final.
-- `src/predict.py`: puntuación de nuevas filas sin requerir etiqueta futura.
-- `docs/GUIA_POWER_BI_FINAL.md`: conexión del dashboard a las salidas finales.
-- `src/modeling.py`: experimentos reutilizables de balanceo, clustering, Optuna, comparación supervisada y evaluación final.
-- `src/validate_notebook_execution.py` y `src/verify_project.py`: ejecución controlada y verificación del proyecto.
-- `src/check_notebook_execution.py`: acceso alternativo al validador de notebooks.
-- `notebooks/01_generacion_datos.ipynb`: generación reproducible del dataset sintético.
-- `notebooks/02_analisis_exploratorio.ipynb`: perfil y exploración descriptiva de la cohorte.
-- `notebooks/03_modelado_abandono.ipynb`: selección, entrenamiento y evaluación del modelo.
-- `data/raw/`: dataset sintético por cliente, historial mensual agregado de 36 meses y metadatos; los splits se separan en `train/` y `test/`.
-- `data/processed/`: CSV derivados organizados en `train/` y `test/`; el manifiesto de particiones queda en la raíz.
-- `outputs/graphs/`: histogramas, comparaciones y matrices de confusión exportados sin abrir ventanas.
-- `outputs/model/`: modelo serializado, métricas JSON y resumen de calidad.
-- `docs/`: documentos originales de planificación y registro de correcciones.
+- Comparación de regresión logística sin balanceo y con pesos de clase, Random Forest con pesos y Balanced Random Forest.
+- Clustering exploratorio con K-Means, Gaussian Mixture y clustering aglomerativo, evaluado con silhouette, Davies–Bouldin y Calinski–Harabasz. K-Means con `k=3` obtuvo el silhouette mayor observado (**0,1347**); la separación es moderada y los segmentos son descriptivos, no una predicción de abandono.
+- Búsqueda acotada con Optuna para regresión logística, Extra Trees, Random Forest y Balanced Random Forest (cinco pruebas por familia), optimizando Average Precision en validación.
+- Comparación supervisada, selección de umbral por F1 en validación, calibración sigmoide CV3 sobre los datos de ajuste y evaluación final.
+- Exportación de predicciones, curvas, matriz de confusión, ganancia/lift, auditoría regional y explicaciones SHAP.
 
-### Convención narrativa para notebooks
+## Variables y preparación del modelo
 
-Cada sección de los notebooks debe comenzar indicando qué se hará y por qué ese paso es pertinente para el problema de retail de RetailNova. Después del análisis debe cerrar con una conclusión basada en los hallazgos observados y sus límites. Mantener esta estructura al ampliar o modificar los notebooks; distinguir siempre los resultados sintéticos de evidencia comercial real.
+La lista `FEATURES` en `src/modeling.py` define explícitamente los predictores:
 
-El EDA exporta a `data/processed/train/` la fuente de train, su versión limpia y el dataset inicial del dashboard; el holdout permanece en `data/raw/test/test.csv`. El procesamiento genera `data/processed/train/train.csv` y `data/processed/test/test.csv` con el mismo preprocesador ajustado sobre train. Las comparaciones y artefactos de entrenamiento se guardan en la subcarpeta `train/`; puntuaciones y auditorías del holdout, en `test/`. El dataset de dashboard es una base inicial sin predicciones.
+`edad`, `canal_compra`, `antiguedad_meses`, `cantidad_compras_12m`, `monto_promedio_compra`, `categoria_principal`, `proporcion_compras_promocion`, `devoluciones_12m`, `reclamos_12m`, `interacciones_campanas_12m`, `recencia_dias` y `tasa_devoluciones`.
 
-Para una demostración se pueden importar `data/processed/train/dashboard_train.csv`, `data/processed/test/predicciones_modelo_final_test.csv` y `data/processed/test/auditoria_regional.csv` en Power BI. Este paquete no incluye el archivo PBIX del equipo: debe actualizarse siguiendo docs/GUIA_POWER_BI_FINAL.md. Los modelos joblib están en `outputs/model/` y son para el entorno de confianza del proyecto; solo cargar modelos de origen conocido.
+La última variable se deriva como devoluciones de los 12 meses divididas por compras de los 12 meses (con denominador mínimo 1). La pipeline imputa valores numéricos con la mediana y agrega indicadores de faltantes; imputa categóricos con la categoría más frecuente y aplica one-hot encoding. Las variables numéricas se escalan con `RobustScaler`.
 
-## Alcance y pendientes EP5
+Se excluyen del modelo el ID, la etiqueta, las columnas de información posterior al corte y las variables geográficas (`region` y `comuna`). La edad se mantiene como variable de demostración; su pertinencia y posibles diferencias entre grupos requerirían revisión antes de cualquier uso real. La auditoría regional es descriptiva y no demuestra ausencia de sesgo.
 
-Los documentos originales de factibilidad y planificación se conservan como línea base, sin modificarlos retroactivamente. Revisar `docs/CORRECCIONES_EP5.md`. El tablero Jira y su historial no fueron consultados ni modificados: faltan las evidencias reales de responsables, fechas, avance y comparación contra EP3. No se afirma un porcentaje de avance global ni cumplimiento del presupuesto. El informe final de 5–8 páginas y la presentación tampoco están incluidos.
+## Resultados finales vigentes
 
-Las métricas miden recuperación de patrones diseñados por el generador. No prueban capacidad predictiva real, causalidad, ahorro, fidelización efectiva ni resultados de un piloto. Antes de uso comercial se necesitan datos reales autorizados, cohortes temporales independientes, validación comercial, revisión de variables y monitoreo.
+La fuente única de métricas es `outputs/model/metricas_modelado_avanzado_test.json`. `outputs/model/metricas_test.json` es un alias idéntico.
 
-## Fuente única de resultados finales
+| Métrica en test sintético | Resultado |
+| --- | ---: |
+| Clientes evaluados | 37.000 |
+| Tasa de abandono observada | 23,9378% |
+| Probabilidad media predicha | 23,9865% |
+| Umbral binario seleccionado en validación | 0,2067 |
+| Accuracy | 57,73% |
+| Precision | 32,33% |
+| Recall | 70,08% |
+| F1 | 44,25% |
+| ROC-AUC | 0,6748 |
+| Average Precision | 0,4170 |
+| Brier | 0,1673 |
+| Log loss | 0,5120 |
 
-`outputs/model/metricas_modelado_avanzado_test.json` y `metricas_test.json` son alias idénticos. Los modelos `modelo_retailnova_avanzado.joblib` y `modelo_retailnova.joblib` corresponden al mismo pipeline calibrado. `data/processed/test/predicciones_modelo_final_test.csv` y `clientes_riesgo_test.csv` contienen exactamente las mismas puntuaciones. La auditoría regional y los gráficos de evaluación se recalculan desde esa fuente final. Las comparaciones de candidatos en validación se conservan como experimentos previos, no son las métricas del modelo calibrado final.
+Matriz de confusión en test (filas: clase real `0`, `1`; columnas: predicción `0`, `1`):
 
-SHAP explica el score del clasificador base antes de calibración. El CSV `top5_shap_final.csv` permite mostrar cinco factores en Power BI. Sus magnitudes no son cambios porcentuales en la probabilidad calibrada. Los cortes Bajo/Medio/Alto son ilustrativos y no se confunden con el umbral binario optimizado.
+|  | Predicción sin abandono | Predicción abandono |
+| --- | ---: | ---: |
+| Real sin abandono | 15.154 | 12.989 |
+| Real abandono | 2.650 | 6.207 |
 
-### Puntuar datos nuevos
+El umbral refleja una decisión de clasificación optimizada por F1 en validación, no una regla económica validada. El recall debe leerse junto con la precision: en este resultado hay un volumen importante de falsos positivos. La tasa observada y la probabilidad media predicha son cantidades distintas.
+
+### Candidatos comparados en validación
+
+La siguiente tabla corresponde a la comparación de modelos en la validación interna, a umbral 0,5; **no** son las métricas finales del test ni las del umbral elegido finalmente.
+
+| Modelo | Average Precision | ROC-AUC | Precision | Recall | F1 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Regresión logística | 0,4103 | 0,6756 | 0,3504 | 0,5917 | 0,4402 |
+| Extra Trees | 0,4053 | 0,6721 | 0,3576 | 0,5559 | 0,4352 |
+| Balanced Random Forest | 0,4008 | 0,6695 | 0,3572 | 0,5607 | 0,4364 |
+| Random Forest | 0,4008 | 0,6706 | 0,3543 | 0,5680 | 0,4364 |
+
+## Interpretación y límites
+
+1. **Datos sintéticos:** las métricas describen la recuperación de patrones incorporados al generador; no demuestran capacidad predictiva en clientes reales, causalidad, ahorro, fidelización efectiva ni resultados de un piloto.
+2. **Test previamente inspeccionado:** el holdout se observó en versiones anteriores. Esta actualización es una reevaluación del prototipo, no una validación confirmatoria independiente. Para confirmación se requiere una cohorte temporal nueva e independiente, sin selección de modelos sobre ella.
+3. **Umbral y operación:** el umbral 0,2067 se eligió por F1 en validación; no incorpora costos de contacto, capacidad de campañas ni valor de cliente. Los cortes de riesgo Bajo/Medio/Alto son ilustrativos y distintos del umbral binario.
+4. **SHAP:** explica el score del clasificador base antes de calibración. No representa cambios porcentuales en la probabilidad calibrada ni relaciones causales. `top5_shap_final.csv` sirve como resumen para demostración.
+5. **Segmentación y región:** los clústeres y métricas regionales son análisis exploratorios/descriptivos; no acreditan estabilidad de segmentos ni ausencia de sesgo.
+
+Antes de cualquier uso comercial se requieren datos reales autorizados, definición operacional validada, evaluación temporal independiente, análisis de sesgo, revisión de privacidad y monitoreo. También debería evaluarse la utilidad de la intervención mediante un piloto controlado.
+
+## Salidas y uso en demostración
+
+- `outputs/model/metricas_modelado_avanzado_test.json`: métricas oficiales del modelo final; `metricas_test.json` es alias idéntico.
+- `outputs/model/modelo_retailnova_avanzado.joblib` y `modelo_retailnova.joblib`: aliases del pipeline final calibrado.
+- `data/processed/test/clientes_riesgo_test.csv` y `predicciones_modelo_final_test.csv`: puntuaciones de demostración del test, según las salidas existentes en la entrega.
+- `data/processed/test/auditoria_regional.csv`: resumen descriptivo por región.
+- `data/processed/test/top5_shap_final.csv`: cinco factores SHAP principales del score base.
+- `data/processed/train/dashboard_train.csv`: dataset inicial para el dashboard, sin predicciones finales.
+- `outputs/graphs/`: gráficos de EDA, comparación, calibración, clustering, curvas, matriz de confusión, ganancia/lift y SHAP.
+
+Para actualizar el dashboard, seguir [`docs/GUIA_POWER_BI_FINAL.md`](docs/GUIA_POWER_BI_FINAL.md). La probabilidad media estimada no debe presentarse como la tasa observada de abandono.
+
+### Puntuar nuevos datos
 
 ```bash
-python src/predict.py --input data/raw/test/test.csv --output data/processed/test/nuevas_puntuaciones.csv
+python src/predict.py --input ruta/a/clientes.csv --output data/processed/test/nuevas_puntuaciones.csv
 ```
 
-El comando es ilustrativo; para puntuar futuros clientes, sustituir input por una tabla con ID único y las variables previas al corte. No requiere `churn_6m` ni información posterior. Antes de inferencia revisar que las ventanas y definiciones coincidan.
+El CSV de entrada debe tener un `id_cliente` único y las variables previas al corte que requiere el modelo. No necesita `churn_6m` ni datos posteriores. El ejemplo de comando es ilustrativo; para inferencia real, sustituir el archivo por una fuente autorizada y revisar que las definiciones y ventanas coincidan con las del entrenamiento.
 
-### Entorno verificado
+## Archivos principales
 
-`requirements-lock.txt` registra versiones del entorno de esta corrección. Los notebooks 01 y 02 se conservaron de la entrega del equipo; se reejecutó el notebook 03 y el verificador integral con los nuevos resultados. No se reconstruyó nuevamente el historial de 36 meses al aplicar esta corrección.
+- `src/generate_data.py`: generador sintético, supuestos y metadatos.
+- `src/paths.py`: rutas canónicas de datos y artefactos.
+- `src/modeling.py`: preparación, balanceo, clustering, Optuna, comparación supervisada, calibración y evaluación final.
+- `src/predict.py`: puntuación de filas nuevas sin requerir etiqueta futura.
+- `src/analyze.py`: compatibilidad de la lista de variables.
+- `src/validate_notebook_execution.py`, `src/check_notebook_execution.py` y `src/verify_project.py`: ejecución controlada y verificaciones.
+- `notebooks/01_generacion_datos.ipynb`: generación reproducible.
+- `notebooks/02_analisis_exploratorio.ipynb`: perfilado, EDA y preparación.
+- `notebooks/03_modelado_abandono.ipynb`: experimentos, selección, calibración y evaluación.
+- `docs/CORRECCIONES_EP5.md`: registro de correcciones y límites de la entrega.
+- `docs/GUIA_POWER_BI_FINAL.md`: guía para conectar las salidas al dashboard.
+- `requirements-lock.txt`: versiones del entorno verificado.
+
+## Estado de entrega EP5
+
+Los documentos de factibilidad y planificación originales se conservan como línea base; no se modifican retroactivamente. El registro de correcciones indica que el tablero Jira y su historial no fueron consultados ni modificados en esta revisión. La guía de Power BI y los CSV facilitan la demostración, pero no acreditan que el PBIX final esté completado. Según ese registro, siguen pendientes confirmar/entregar el dashboard Power BI, el informe final de 5–8 páginas y la presentación, además de incorporar en Jira evidencia, responsables, fechas y esfuerzo reales. No se afirma un porcentaje de avance global ni cumplimiento de presupuesto.
+
+## Verificación y entorno
+
+`requirements-lock.txt` registra versiones del entorno de la corrección. Según el registro, se conservaron los notebooks 01 y 02 de la entrega del equipo, se reejecutó el notebook 03 y se ejecutó el verificador integral. Para comprobar la versión del repositorio local:
+
+```bash
+python src/validate_notebook_execution.py
+python src/verify_project.py
+```
+
+La generación reproduce los datos sintéticos con semilla 42; el historial y los artefactos existentes corresponden a la ejecución documentada en el repositorio.
